@@ -83,13 +83,13 @@ fn get_rotated_shape(tetromino_type: TetrominoType, rotation_index: usize) -> &'
 
 fn get_tetromino_color(tetromino_type: TetrominoType) -> Color {
     match tetromino_type {
-        TetrominoType::I => Color::RGB(0, 255, 255),
-        TetrominoType::O => Color::RGB(255, 255, 0),
-        TetrominoType::T => Color::RGB(128, 0, 128),
-        TetrominoType::S => Color::RGB(0, 255, 0),
-        TetrominoType::Z => Color::RGB(255, 0, 0),
-        TetrominoType::J => Color::RGB(0, 0, 255),
-        TetrominoType::L => Color::RGB(255, 165, 0),
+        TetrominoType::I => Color::RGB(255, 215, 0),   // Gold
+        TetrominoType::O => Color::RGB(0, 100, 0),     // Dark Green
+        TetrominoType::T => Color::RGB(138, 43, 226),  // BlueViolet (Deep Purple)
+        TetrominoType::S => Color::RGB(178, 34, 34),   // Firebrick Red
+        TetrominoType::Z => Color::RGB(80, 80, 80),    // Medium-Dark Gray/Charcoal
+        TetrominoType::J => Color::RGB(72, 61, 139),   // DarkSlateBlue (Indigo)
+        TetrominoType::L => Color::RGB(205, 92, 92),   // IndianRed (Brownish/Muted Red)
     }
 }
 
@@ -301,15 +301,37 @@ pub fn main() -> Result<(), String> {
     // let font_path_str_macos = "/System/Library/Fonts/Helvetica.ttc"; // Common on macOS
     // let font_path_str_windows = "C:/Windows/Fonts/arial.ttf"; // Common on Windows
     // TODO: Add more robust font finding or include a font with the game.
-    let mut font = match ttf_context.load_font(font_path_str, 24) {
-        Ok(f) => f,
-        Err(e) => {
-            eprintln!("Failed to load font at '{}': {}. Falling back to system or default.", font_path_str, e);
-            // As a very basic fallback, try to load *any* font the system might offer by name, though this is unreliable.
-            // Or, ideally, bundle a font. For now, we'll proceed and text might not render if this fails.
-            // This example will likely fail if DejaVuSans is not found.
-            // A real game should bundle a font or have better fallback.
-             return Err(format!("Could not load font: {}", e));
+    // Font loading - attempt common paths
+    let font_paths_to_try = [
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",      // Preferred Noto Sans
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", // Common Liberation Sans
+        "/usr/share/fonts/truetype/roboto/Roboto-Regular.ttf",         // Modern Roboto
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",           // Original fallback
+        // Add more paths here if needed, e.g., for other OS or common fonts
+    ];
+
+    let mut font: Option<Font> = None;
+    let mut loaded_font_path = "None (all fallbacks failed)";
+
+    for path_str in font_paths_to_try.iter() {
+        match ttf_context.load_font(path_str, 24) {
+            Ok(f) => {
+                font = Some(f);
+                loaded_font_path = path_str;
+                println!("Successfully loaded font: {}", loaded_font_path);
+                break;
+            }
+            Err(e) => {
+                eprintln!("Failed to load font at '{}': {}. Trying next fallback.", path_str, e);
+            }
+        }
+    }
+
+    let mut font = match font {
+        Some(f) => f,
+        None => {
+            // This block will be entered if all font loading attempts fail
+            return Err("All font loading attempts failed. Please ensure at least one specified font is available.".to_string());
         }
     };
     font.set_style(sdl2::ttf::FontStyle::BOLD);
@@ -505,14 +527,14 @@ pub fn main() -> Result<(), String> {
             }
         }
 
-        canvas.set_draw_color(Color::RGB(30, 30, 30));
+        canvas.set_draw_color(Color::RGB(20, 20, 30)); // Main window background
         canvas.clear();
 
         let playfield_bg_rect = Rect::new(0,0, playfield_render_width, window_height);
-        canvas.set_draw_color(Color::RGB(50,50,50));
+        canvas.set_draw_color(Color::RGB(40, 40, 50)); // Playfield background
         canvas.fill_rect(playfield_bg_rect)?;
 
-        canvas.set_draw_color(Color::RGB(70, 70, 70));
+        canvas.set_draw_color(Color::RGB(80, 80, 90)); // Grid lines color
         for x_grid in 0..=PLAYFIELD_WIDTH {
             canvas.draw_line( (x_grid as u32 * BLOCK_SIZE, 0), (x_grid as u32 * BLOCK_SIZE, window_height))?;
         }
@@ -523,23 +545,31 @@ pub fn main() -> Result<(), String> {
         for (r, row) in playfield.iter().enumerate() {
             for (c, &cell_value) in row.iter().enumerate() {
                 if cell_value != 0 {
-                    let block_color = get_locked_block_color(cell_value);
-                    let rect = Rect::new( (c as u32 * BLOCK_SIZE) as i32, (r as u32 * BLOCK_SIZE) as i32, BLOCK_SIZE, BLOCK_SIZE);
-                    canvas.set_draw_color(block_color);
-                    canvas.fill_rect(rect)?;
+                    let main_color = get_locked_block_color(cell_value);
+                    draw_block_with_border(
+                        &mut canvas,
+                        (c as u32 * BLOCK_SIZE) as i32,
+                        (r as u32 * BLOCK_SIZE) as i32,
+                        BLOCK_SIZE,
+                        main_color
+                    )?;
                 }
             }
         }
         
         if !game_over {
-            let tetromino_color = get_tetromino_color(current_tetromino.tetromino_type);
+            let main_color = get_tetromino_color(current_tetromino.tetromino_type);
             for &(block_dx, block_dy) in &current_tetromino.blocks {
                 let px = current_tetromino.x + block_dx;
                 let py = current_tetromino.y + block_dy;
                 if px >= 0 && px < PLAYFIELD_WIDTH as i32 && py >= 0 && py < PLAYFIELD_HEIGHT as i32 {
-                    let rect = Rect::new( (px * BLOCK_SIZE as i32), (py * BLOCK_SIZE as i32), BLOCK_SIZE, BLOCK_SIZE);
-                    canvas.set_draw_color(tetromino_color);
-                    canvas.fill_rect(rect)?;
+                    draw_block_with_border(
+                        &mut canvas,
+                        (px * BLOCK_SIZE as i32),
+                        (py * BLOCK_SIZE as i32),
+                        BLOCK_SIZE,
+                        main_color
+                    )?;
                 }
             }
         }
@@ -550,16 +580,18 @@ pub fn main() -> Result<(), String> {
         let line_spacing = 30;
         let ui_element_spacing = 40; // Space between major UI elements like "Level" and "Next"
 
-        render_text(&mut canvas, &font, &format!("Score: {}", score), text_x, current_text_y, Color::WHITE)?;
+        const PALE_GOLD_COLOR: Color = Color::RGB(230, 210, 160);
+
+        render_text(&mut canvas, &font, &format!("Score: {}", score), text_x, current_text_y, PALE_GOLD_COLOR)?;
         current_text_y += line_spacing;
-        render_text(&mut canvas, &font, &format!("Lines: {}", total_lines_cleared), text_x, current_text_y, Color::WHITE)?;
+        render_text(&mut canvas, &font, &format!("Lines: {}", total_lines_cleared), text_x, current_text_y, PALE_GOLD_COLOR)?;
         current_text_y += line_spacing;
-        render_text(&mut canvas, &font, &format!("Level: {}", current_level), text_x, current_text_y, Color::WHITE)?;
+        render_text(&mut canvas, &font, &format!("Level: {}", current_level), text_x, current_text_y, PALE_GOLD_COLOR)?;
         
         current_text_y += ui_element_spacing; // Add space before "Next" piece display
 
         // "Next" Piece Display
-        render_text(&mut canvas, &font, "Next:", text_x, current_text_y, Color::WHITE)?;
+        render_text(&mut canvas, &font, "Next:", text_x, current_text_y, PALE_GOLD_COLOR)?;
         current_text_y += line_spacing; // Space for the label itself
 
         let next_piece_box_x = text_x;
@@ -568,7 +600,7 @@ pub fn main() -> Result<(), String> {
         let next_piece_box_height = 4 * BLOCK_SIZE;
 
         // Draw a background box for the next piece (optional)
-        canvas.set_draw_color(Color::RGB(40,40,40)); // Slightly different background for the box
+        canvas.set_draw_color(Color::RGB(30, 30, 40)); // Next piece box background
         canvas.fill_rect(Rect::new(next_piece_box_x, next_piece_box_y, next_piece_box_width, next_piece_box_height))?;
         
         // Render the next_tetromino
@@ -590,7 +622,7 @@ pub fn main() -> Result<(), String> {
         let offset_y = ( (4 - piece_height_blocks) as f32 / 2.0 - min_by as f32) * BLOCK_SIZE as f32;
 
 
-        let next_tetromino_color = get_tetromino_color(next_tetromino.tetromino_type);
+        let main_color = get_tetromino_color(next_tetromino.tetromino_type);
         for &(block_dx, block_dy) in &next_tetromino.blocks {
             let render_x = next_piece_box_x + (block_dx * BLOCK_SIZE as i32) + offset_x as i32;
             let render_y = next_piece_box_y + (block_dy * BLOCK_SIZE as i32) + offset_y as i32;
@@ -598,9 +630,13 @@ pub fn main() -> Result<(), String> {
             // Ensure blocks are drawn within the box for tidiness, though centering should help
             if render_x >= next_piece_box_x && render_x < next_piece_box_x + next_piece_box_width as i32 &&
                render_y >= next_piece_box_y && render_y < next_piece_box_y + next_piece_box_height as i32 {
-                 let rect = Rect::new(render_x, render_y, BLOCK_SIZE, BLOCK_SIZE);
-                 canvas.set_draw_color(next_tetromino_color);
-                 canvas.fill_rect(rect)?;
+                draw_block_with_border(
+                    &mut canvas,
+                    render_x,
+                    render_y,
+                    BLOCK_SIZE,
+                    main_color
+                )?;
             }
         }
 
@@ -610,15 +646,55 @@ pub fn main() -> Result<(), String> {
             let game_over_y = window_height / 2 - 60;
             let overlay_rect = Rect::new(game_over_x - 20, game_over_y - 20, 240, 140); // Adjusted width for potentially longer score text
             canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
-            canvas.set_draw_color(Color::RGBA(0,0,0,150)); // Black with alpha
+            canvas.set_draw_color(Color::RGBA(10, 10, 20, 180)); // Game Over overlay
             canvas.fill_rect(overlay_rect)?;
-            render_text(&mut canvas, &font, "GAME OVER", game_over_x, game_over_y, Color::RED)?;
-            render_text(&mut canvas, &font, &format!("Final Score: {}", score), game_over_x, game_over_y + line_spacing, Color::WHITE)?;
-            render_text(&mut canvas, &font, "Press 'R' to Restart", game_over_x, game_over_y + 2 * line_spacing, Color::WHITE)?;
+            render_text(&mut canvas, &font, "GAME OVER", game_over_x, game_over_y, Color::RED)?; // GAME OVER title remains Red
+            render_text(&mut canvas, &font, &format!("Final Score: {}", score), game_over_x, game_over_y + line_spacing, PALE_GOLD_COLOR)?;
+            render_text(&mut canvas, &font, "Press 'R' to Restart", game_over_x, game_over_y + 2 * line_spacing, PALE_GOLD_COLOR)?;
         }
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+    }
+
+    Ok(())
+}
+
+// Helper function to draw a single block with a border
+fn draw_block_with_border(
+    canvas: &mut Canvas<Window>,
+    x: i32,
+    y: i32,
+    block_size: u32,
+    main_color: Color,
+) -> Result<(), String> {
+    let border_thickness = 2; // Adjust for desired thickness
+
+    // Calculate darker shade for the border
+    let border_color = Color::RGB(
+        main_color.r.saturating_sub(50), // Increased difference for more contrast
+        main_color.g.saturating_sub(50),
+        main_color.b.saturating_sub(50),
+    );
+
+    // Draw the outer rectangle (the border)
+    canvas.set_draw_color(border_color);
+    canvas.fill_rect(Rect::new(x, y, block_size, block_size))?;
+
+    // Draw the inner, slightly smaller rectangle with the main color
+    // Ensure block_size is greater than 2 * border_thickness to avoid underflow
+    if block_size > 2 * border_thickness {
+        canvas.set_draw_color(main_color);
+        canvas.fill_rect(Rect::new(
+            x + border_thickness,
+            y + border_thickness,
+            block_size - (2 * border_thickness),
+            block_size - (2 * border_thickness),
+        ))?;
+    } else {
+        // If block_size is too small, just draw the main color block without a border or a very thin one
+        canvas.set_draw_color(main_color);
+        canvas.fill_rect(Rect::new(x, y, block_size, block_size))?;
     }
 
     Ok(())
