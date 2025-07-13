@@ -1,5 +1,7 @@
 extern crate sdl2;
 extern crate rand;
+#[macro_use]
+extern crate lazy_static;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -25,60 +27,62 @@ enum TetrominoType {
     I = 1, O, T, S, Z, J, L,
 }
 
-const TETROMINO_SHAPES: [[[Vec<(i32, i32)>; 4]; 7];1] = [[
-    // I
-    [
-        vec![(0,0), (-1,0), (1,0), (2,0)],
-        vec![(0,0), (0,-1), (0,1), (0,2)],
-        vec![(0,0), (-1,0), (1,0), (2,0)],
-        vec![(0,0), (0,-1), (0,1), (0,2)]
-    ],
-    // O
-    [
-        vec![(0,0), (1,0), (0,1), (1,1)],
-        vec![(0,0), (1,0), (0,1), (1,1)],
-        vec![(0,0), (1,0), (0,1), (1,1)],
-        vec![(0,0), (1,0), (0,1), (1,1)]
-    ],
-    // T
-    [
-        vec![(0,0), (-1,0), (1,0), (0,-1)],
-        vec![(0,0), (0,-1), (0,1), (1,0)],
-        vec![(0,0), (-1,0), (1,0), (0,1)],
-        vec![(0,0), (0,-1), (0,1), (-1,0)]
-    ],
-    // S
-    [
-        vec![(0,0), (-1,0), (0,-1), (1,-1)],
-        vec![(0,0), (0,1), (1,0), (1,-1)],
-        vec![(0,0), (-1,0), (0,-1), (1,-1)],
-        vec![(0,0), (0,1), (1,0), (1,-1)]
-    ],
-    // Z
-    [
-        vec![(0,0), (1,0), (0,-1), (-1,-1)],
-        vec![(0,0), (0,-1), (1,0), (1,1)],
-        vec![(0,0), (1,0), (0,-1), (-1,-1)],
-        vec![(0,0), (0,-1), (1,0), (1,1)]
-    ],
-    // J
-    [
-        vec![(0,0), (-1,0), (1,0), (1,-1)],
-        vec![(0,0), (0,-1), (0,1), (1,1)],
-        vec![(0,0), (-1,0), (1,0), (-1,1)],
-        vec![(0,0), (0,-1), (0,1), (-1,-1)]
-    ],
-    // L
-    [
-        vec![(0,0), (-1,0), (1,0), (-1,-1)],
-        vec![(0,0), (0,-1), (0,1), (1,-1)],
-        vec![(0,0), (-1,0), (1,0), (1,1)],
-        vec![(0,0), (0,-1), (0,1), (-1,1)]
-    ],
-]];
+lazy_static! {
+    static ref TETROMINO_SHAPES: Vec<Vec<Vec<(i32, i32)>>> = vec![
+        // I
+        vec![
+            vec![(0,0), (-1,0), (1,0), (2,0)],
+            vec![(0,0), (0,-1), (0,1), (0,2)],
+            vec![(0,0), (-1,0), (1,0), (2,0)],
+            vec![(0,0), (0,-1), (0,1), (0,2)]
+        ],
+        // O
+        vec![
+            vec![(0,0), (1,0), (0,1), (1,1)],
+            vec![(0,0), (1,0), (0,1), (1,1)],
+            vec![(0,0), (1,0), (0,1), (1,1)],
+            vec![(0,0), (1,0), (0,1), (1,1)]
+        ],
+        // T
+        vec![
+            vec![(0,0), (-1,0), (1,0), (0,-1)],
+            vec![(0,0), (0,-1), (0,1), (1,0)],
+            vec![(0,0), (-1,0), (1,0), (0,1)],
+            vec![(0,0), (0,-1), (0,1), (-1,0)]
+        ],
+        // S
+        vec![
+            vec![(0,0), (-1,0), (0,-1), (1,-1)],
+            vec![(0,0), (0,1), (1,0), (1,-1)],
+            vec![(0,0), (-1,0), (0,-1), (1,-1)],
+            vec![(0,0), (0,1), (1,0), (1,-1)]
+        ],
+        // Z
+        vec![
+            vec![(0,0), (1,0), (0,-1), (-1,-1)],
+            vec![(0,0), (0,-1), (1,0), (1,1)],
+            vec![(0,0), (1,0), (0,-1), (-1,-1)],
+            vec![(0,0), (0,-1), (1,0), (1,1)]
+        ],
+        // J
+        vec![
+            vec![(0,0), (-1,0), (1,0), (1,-1)],
+            vec![(0,0), (0,-1), (0,1), (1,1)],
+            vec![(0,0), (-1,0), (1,0), (-1,1)],
+            vec![(0,0), (0,-1), (0,1), (-1,-1)]
+        ],
+        // L
+        vec![
+            vec![(0,0), (-1,0), (1,0), (-1,-1)],
+            vec![(0,0), (0,-1), (0,1), (1,-1)],
+            vec![(0,0), (-1,0), (1,0), (1,1)],
+            vec![(0,0), (0,-1), (0,1), (-1,1)]
+        ],
+    ];
+}
 
-fn get_rotated_shape(tetromino_type: TetrominoType, rotation_index: usize) -> &'static Vec<(i32, i32)> {
-    &TETROMINO_SHAPES[0][tetromino_type as usize -1][rotation_index % 4]
+fn get_rotated_shape(tetromino_type: TetrominoType, rotation_index: usize) -> Vec<(i32, i32)> {
+    TETROMINO_SHAPES[tetromino_type as usize - 1][rotation_index % 4].clone()
 }
 
 fn get_tetromino_color(tetromino_type: TetrominoType) -> Color {
@@ -198,40 +202,41 @@ fn lock_piece(tetromino: &Tetromino, playfield: &mut Playfield, current_level: u
     *game_level = *total_lines_cleared / 10 + 1;
 }
 
-const JLSTZ_KICKS: [[[(i32, i32); 5]; 4]; 2] = [
-    [ // Clockwise
-        [(0,0), (-1,0), (-1,-1), (0,2), (-1,2)], // 0 -> 1
-        [(0,0), (1,0), (1,1), (0,-2), (1,-2)],   // 1 -> 2
-        [(0,0), (1,0), (1,-1), (0,2), (1,2)],    // 2 -> 3
-        [(0,0), (-1,0), (-1,1), (0,-2), (-1,-2)],// 3 -> 0
-    ],
-    [ // Counter-Clockwise
-        [(0,0), (1,0), (1,-1), (0,2), (1,2)],    // 0 -> 3
-        [(0,0), (1,0), (1,1), (0,-2), (1,-2)],   // 1 -> 0 (should be 3->0 if mapping from actual rotation index)
-                                                 // Corrected Kick indices for CCW:
-                                                 // R to Initial (1->0) uses kicks for 0->1 (CW) but negated/inverted
-                                                 // For simplicity, this table is (current_rot_idx, desired_rot_idx)
-                                                 // This is more standard: (current_rot_idx, CW_or_CCW) -> kicks
-                                                 // The provided table seems to be (CW/CCW_Set_Index, Source_Rotation_Index)
-        [(0,0), (1,0), (1,1), (0,-2), (1,-2)],   // Corrected based on common SRS tables: 1->0
-        [(0,0), (-1,0), (-1,-1), (0,2), (-1,2)], // Corrected: 2->1
-        [(0,0), (-1,0), (-1,1), (0,-2), (-1,-2)], // Corrected: 3->2
-    ]
-];
-const I_KICKS: [[[(i32, i32); 5]; 4]; 2] = [
-    [ // Clockwise
-        [(0,0), (-2,0), (1,0), (-2,1), (1,-2)], // 0 -> 1
-        [(0,0), (-1,0), (2,0), (-1,-2), (2,1)], // 1 -> 2
-        [(0,0), (2,0), (-1,0), (2,-1), (-1,2)], // 2 -> 3
-        [(0,0), (1,0), (-2,0), (1,2), (-2,-1)], // 3 -> 0
-    ],
-    [ // Counter-Clockwise
-        [(0,0), (-1,0), (2,0), (-1,-2), (2,1)], // Corrected: 0->3
-        [(0,0), (2,0), (-1,0), (2,-1), (-1,2)], // Corrected: 1->0
-        [(0,0), (1,0), (-2,0), (1,2), (-2,-1)], // Corrected: 2->1
-        [(0,0), (-2,0), (1,0), (-2,1), (1,-2)], // Corrected: 3->2
-    ]
-];
+lazy_static! {
+    static ref JLSTZ_KICKS: Vec<Vec<Vec<(i32, i32)>>> = vec![
+        // Clockwise
+        vec![
+            vec![(0,0), (-1,0), (-1,-1), (0,2), (-1,2)], // 0 -> 1
+            vec![(0,0), (1,0), (1,1), (0,-2), (1,-2)],   // 1 -> 2
+            vec![(0,0), (1,0), (1,-1), (0,2), (1,2)],    // 2 -> 3
+            vec![(0,0), (-1,0), (-1,1), (0,-2), (-1,-2)],// 3 -> 0
+        ],
+        // Counter-Clockwise
+        vec![
+            vec![(0,0), (1,0), (1,-1), (0,2), (1,2)],    // 0 -> 3
+            vec![(0,0), (1,0), (1,1), (0,-2), (1,-2)],   // 1 -> 0
+            vec![(0,0), (-1,0), (-1,-1), (0,2), (-1,2)], // Corrected: 2->1
+            vec![(0,0), (-1,0), (-1,1), (0,-2), (-1,-2)], // Corrected: 3->2
+        ]
+    ];
+
+    static ref I_KICKS: Vec<Vec<Vec<(i32, i32)>>> = vec![
+        // Clockwise
+        vec![
+            vec![(0,0), (-2,0), (1,0), (-2,1), (1,-2)], // 0 -> 1
+            vec![(0,0), (-1,0), (2,0), (-1,-2), (2,1)], // 1 -> 2
+            vec![(0,0), (2,0), (-1,0), (2,-1), (-1,2)], // 2 -> 3
+            vec![(0,0), (1,0), (-2,0), (1,2), (-2,-1)], // 3 -> 0
+        ],
+        // Counter-Clockwise
+        vec![
+            vec![(0,0), (-1,0), (2,0), (-1,-2), (2,1)], // 0 -> 3
+            vec![(0,0), (2,0), (-1,0), (2,-1), (-1,2)], // 1 -> 0
+            vec![(0,0), (1,0), (-2,0), (1,2), (-2,-1)], // 2 -> 1
+            vec![(0,0), (-2,0), (1,0), (-2,1), (1,-2)], // 3 -> 2
+        ]
+    ];
+}
 
 fn attempt_rotation(
     tetromino: &Tetromino, playfield: &Playfield, clockwise: bool,
@@ -239,7 +244,7 @@ fn attempt_rotation(
     if tetromino.tetromino_type == TetrominoType::O { return None; }
     let current_rotation_index = tetromino.rotation_index;
     let target_rotation_index = if clockwise { (current_rotation_index + 1) % 4 } else { (current_rotation_index + 3) % 4 };
-    let target_shape_blocks = get_rotated_shape(tetromino.tetromino_type, target_rotation_index).clone();
+    let target_shape_blocks = get_rotated_shape(tetromino.tetromino_type, target_rotation_index);
 
     let kick_set_index = if clockwise { 0 } else { 1 };
     // Kick table source rotation index is the current_rotation_index for JLSTZ and I.
@@ -296,44 +301,8 @@ pub fn main() -> Result<(), String> {
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
-    // Font loading - attempt common paths
-    let font_path_str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"; // Common on Linux
-    // let font_path_str_macos = "/System/Library/Fonts/Helvetica.ttc"; // Common on macOS
-    // let font_path_str_windows = "C:/Windows/Fonts/arial.ttf"; // Common on Windows
-    // TODO: Add more robust font finding or include a font with the game.
-    // Font loading - attempt common paths
-    let font_paths_to_try = [
-        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",      // Preferred Noto Sans
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", // Common Liberation Sans
-        "/usr/share/fonts/truetype/roboto/Roboto-Regular.ttf",         // Modern Roboto
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",           // Original fallback
-        // Add more paths here if needed, e.g., for other OS or common fonts
-    ];
-
-    let mut font: Option<Font> = None;
-    let mut loaded_font_path = "None (all fallbacks failed)";
-
-    for path_str in font_paths_to_try.iter() {
-        match ttf_context.load_font(path_str, 24) {
-            Ok(f) => {
-                font = Some(f);
-                loaded_font_path = path_str;
-                println!("Successfully loaded font: {}", loaded_font_path);
-                break;
-            }
-            Err(e) => {
-                eprintln!("Failed to load font at '{}': {}. Trying next fallback.", path_str, e);
-            }
-        }
-    }
-
-    let mut font = match font {
-        Some(f) => f,
-        None => {
-            // This block will be entered if all font loading attempts fail
-            return Err("All font loading attempts failed. Please ensure at least one specified font is available.".to_string());
-        }
-    };
+    let font_path = "src/fonts/Roboto-Regular.ttf";
+    let mut font = ttf_context.load_font(font_path, 24)?;
     font.set_style(sdl2::ttf::FontStyle::BOLD);
 
 
@@ -364,7 +333,7 @@ pub fn main() -> Result<(), String> {
 
     'running: loop {
         let gravity_interval = Duration::from_millis(
-            (base_gravity_interval_ms as f32 / (current_level as f32 * 0.5 + 0.5)) as u64 // Faster with level
+            ((base_gravity_interval_ms as f32 / (current_level as f32 * 0.5 + 0.5)) as u64) // Faster with level
             .max(100) // Minimum interval
         );
 
@@ -536,10 +505,10 @@ pub fn main() -> Result<(), String> {
 
         canvas.set_draw_color(Color::RGB(80, 80, 90)); // Grid lines color
         for x_grid in 0..=PLAYFIELD_WIDTH {
-            canvas.draw_line( (x_grid as u32 * BLOCK_SIZE, 0), (x_grid as u32 * BLOCK_SIZE, window_height))?;
+            canvas.draw_line( (x_grid as i32 * BLOCK_SIZE as i32, 0), (x_grid as i32 * BLOCK_SIZE as i32, window_height as i32))?;
         }
         for y_grid in 0..=PLAYFIELD_HEIGHT {
-            canvas.draw_line( (0, y_grid as u32 * BLOCK_SIZE), (playfield_render_width, y_grid as u32 * BLOCK_SIZE))?;
+            canvas.draw_line( (0, y_grid as i32 * BLOCK_SIZE as i32), (playfield_render_width as i32, y_grid as i32 * BLOCK_SIZE as i32))?;
         }
 
         for (r, row) in playfield.iter().enumerate() {
@@ -565,8 +534,8 @@ pub fn main() -> Result<(), String> {
                 if px >= 0 && px < PLAYFIELD_WIDTH as i32 && py >= 0 && py < PLAYFIELD_HEIGHT as i32 {
                     draw_block_with_border(
                         &mut canvas,
-                        (px * BLOCK_SIZE as i32),
-                        (py * BLOCK_SIZE as i32),
+                        px * BLOCK_SIZE as i32,
+                        py * BLOCK_SIZE as i32,
                         BLOCK_SIZE,
                         main_color
                     )?;
@@ -642,8 +611,8 @@ pub fn main() -> Result<(), String> {
 
 
         if game_over {
-            let game_over_x = playfield_render_width / 2 - 100; 
-            let game_over_y = window_height / 2 - 60;
+        let game_over_x = playfield_render_width as i32 / 2 - 100;
+        let game_over_y = window_height as i32 / 2 - 60;
             let overlay_rect = Rect::new(game_over_x - 20, game_over_y - 20, 240, 140); // Adjusted width for potentially longer score text
             canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
             canvas.set_draw_color(Color::RGBA(10, 10, 20, 180)); // Game Over overlay
@@ -686,8 +655,8 @@ fn draw_block_with_border(
     if block_size > 2 * border_thickness {
         canvas.set_draw_color(main_color);
         canvas.fill_rect(Rect::new(
-            x + border_thickness,
-            y + border_thickness,
+            x + border_thickness as i32,
+            y + border_thickness as i32,
             block_size - (2 * border_thickness),
             block_size - (2 * border_thickness),
         ))?;
