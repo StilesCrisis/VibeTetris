@@ -88,3 +88,79 @@ fn test_rotation_and_wall_kick() {
     let wall_kick_result = attempt_rotation(&tetromino, &playfield, true);
     assert!(wall_kick_result.is_some());
 }
+
+#[cfg(test)]
+mod rotation_tests {
+    use super::*;
+
+    fn assert_shape(actual: &[(i32, i32)], expected: &[(i32, i32)]) {
+        let mut actual_sorted = actual.to_vec();
+        actual_sorted.sort();
+        let mut expected_sorted = expected.to_vec();
+        expected_sorted.sort();
+        assert_eq!(actual_sorted, expected_sorted);
+    }
+
+    #[test]
+    fn test_i_rotations() {
+        let piece_type = TetrominoType::I;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (-1,0), (1,0), (2,0)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (0,1), (0,2)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (1,0), (2,0)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (0,1), (0,2)]);
+    }
+
+    #[test]
+    fn test_o_rotations() {
+        let piece_type = TetrominoType::O;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (1,0), (0,1), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (1,0), (0,1), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (1,0), (0,1), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (1,0), (0,1), (1,1)]);
+    }
+
+    #[test]
+    fn test_t_rotations() {
+        let piece_type = TetrominoType::T;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (-1,0), (1,0), (0,-1)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (0,1), (1,0)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (1,0), (0,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (0,1), (-1,0)]);
+    }
+
+    #[test]
+    fn test_s_rotations() {
+        let piece_type = TetrominoType::S;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (-1,0), (0,1), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (1,0), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (0,1), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (1,0), (1,1)]);
+    }
+
+    #[test]
+    fn test_z_rotations() {
+        let piece_type = TetrominoType::Z;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (1,0), (0,1), (-1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,1), (1,0), (1,-1)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (1,0), (0,1), (-1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,1), (1,0), (1,-1)]);
+    }
+
+    #[test]
+    fn test_j_rotations() {
+        let piece_type = TetrominoType::J;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (-1,0), (1,0), (1,-1)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (0,1), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (1,0), (-1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (0,1), (-1,-1)]);
+    }
+
+    #[test]
+    fn test_l_rotations() {
+        let piece_type = TetrominoType::L;
+        assert_shape(&get_rotated_shape(piece_type, 0), &vec![(0,0), (-1,0), (1,0), (-1,-1)]);
+        assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (0,1), (1,-1)]);
+        assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (1,0), (1,1)]);
+        assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (0,1), (-1,1)]);
+    }
+}
