@@ -296,44 +296,8 @@ pub fn main() -> Result<(), String> {
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
-    // Font loading - attempt common paths
-    let font_path_str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"; // Common on Linux
-    // let font_path_str_macos = "/System/Library/Fonts/Helvetica.ttc"; // Common on macOS
-    // let font_path_str_windows = "C:/Windows/Fonts/arial.ttf"; // Common on Windows
-    // TODO: Add more robust font finding or include a font with the game.
-    // Font loading - attempt common paths
-    let font_paths_to_try = [
-        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",      // Preferred Noto Sans
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", // Common Liberation Sans
-        "/usr/share/fonts/truetype/roboto/Roboto-Regular.ttf",         // Modern Roboto
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",           // Original fallback
-        // Add more paths here if needed, e.g., for other OS or common fonts
-    ];
-
-    let mut font: Option<Font> = None;
-    let mut loaded_font_path = "None (all fallbacks failed)";
-
-    for path_str in font_paths_to_try.iter() {
-        match ttf_context.load_font(path_str, 24) {
-            Ok(f) => {
-                font = Some(f);
-                loaded_font_path = path_str;
-                println!("Successfully loaded font: {}", loaded_font_path);
-                break;
-            }
-            Err(e) => {
-                eprintln!("Failed to load font at '{}': {}. Trying next fallback.", path_str, e);
-            }
-        }
-    }
-
-    let mut font = match font {
-        Some(f) => f,
-        None => {
-            // This block will be entered if all font loading attempts fail
-            return Err("All font loading attempts failed. Please ensure at least one specified font is available.".to_string());
-        }
-    };
+    let font_path = "src/fonts/Roboto-Regular.ttf";
+    let mut font = ttf_context.load_font(font_path, 24)?;
     font.set_style(sdl2::ttf::FontStyle::BOLD);
 
 
