@@ -116,7 +116,6 @@ dependencies = [
 name = "rust_sdl2_window"
 version = "0.1.0"
 dependencies = [
- "lazy_static",
  "rand",
  "sdl2",
 ]
