@@ -16,6 +16,21 @@ mod font;
 #[cfg(test)]
 mod tests;
 
+trait CanvasTrait {
+    fn set_draw_color(&mut self, color: Color);
+    fn fill_rect(&mut self, rect: Rect) -> Result<(), String>;
+}
+
+impl CanvasTrait for Canvas<Window> {
+    fn set_draw_color(&mut self, color: Color) {
+        self.set_draw_color(color);
+    }
+
+    fn fill_rect(&mut self, rect: Rect) -> Result<(), String> {
+        self.fill_rect(rect)
+    }
+}
+
 // Game constants
 const PLAYFIELD_WIDTH: usize = 10;
 const PLAYFIELD_HEIGHT: usize = 20; // Visible area
@@ -277,17 +292,17 @@ fn attempt_rotation(
     None
 }
 
-fn render_text(
-    canvas: &mut Canvas<Window>, text: &str, x: i32, y: i32, color: Color,
+fn render_text<T: CanvasTrait>(
+    canvas: &mut T, text: &str, x: i32, y: i32, color: Color,
 ) -> Result<(), String> {
-    let char_width = 5 * 2; // Each pixel is 2x2
+    const CHAR_WIDTH: i32 = 6 * 2;
     canvas.set_draw_color(color);
     for (i, c) in text.chars().enumerate() {
         if let Some(char_data) = font::get_char_data(c) {
             for (row_idx, &row_data) in char_data.iter().enumerate() {
                 for col_idx in 0..5 {
                     if (row_data >> (4 - col_idx)) & 1 == 1 {
-                        let px = x + (i as i32 * char_width) + (col_idx * 2);
+                        let px = x + (i as i32 * CHAR_WIDTH) + (col_idx as i32 * 2);
                         let py = y + (row_idx as i32 * 2);
                         canvas.fill_rect(Rect::new(px, py, 2, 2))?;
                     }
