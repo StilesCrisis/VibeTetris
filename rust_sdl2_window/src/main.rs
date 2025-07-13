@@ -293,6 +293,14 @@ fn attempt_rotation(
     None
 }
 
+fn calculate_ghost_piece_y(tetromino: &Tetromino, playfield: &Playfield) -> i32 {
+    let mut ghost_y = tetromino.y;
+    while !check_collision(&tetromino.blocks, playfield, tetromino.x, ghost_y + 1) {
+        ghost_y += 1;
+    }
+    ghost_y
+}
+
 fn render_text<T: CanvasTrait>(
     canvas: &mut T, text: &str, x: i32, y: i32, color: Color,
 ) -> Result<(), String> {
@@ -339,6 +347,8 @@ pub fn main() -> Result<(), String> {
         _ => 0,
     };
     let mut next_tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
+    let mut held_tetromino: Option<Tetromino> = None;
+    let mut has_swapped: bool = false;
 
 
     let mut score: u32 = 0;
@@ -430,6 +440,7 @@ pub fn main() -> Result<(), String> {
 
                                 current_tetromino.y = final_y;
                                 lock_piece(&current_tetromino, &mut playfield, current_level, &mut score, &mut total_lines_cleared, &mut current_level);
+                                has_swapped = false;
                                 
                                 current_tetromino = next_tetromino;
                                 current_tetromino.x = PLAYFIELD_WIDTH as i32 / 2 -1; // Standard spawn X
@@ -445,6 +456,23 @@ pub fn main() -> Result<(), String> {
                                 }
                                 lock_delay_timer = None; // Reset lock timer
                                 gravity_timer = SystemTime::now(); 
+                            }
+                        }
+                        Keycode::C => { // Hold feature
+                            if !game_over && !has_swapped {
+                                if let Some(mut held) = held_tetromino.take() {
+                                    // Swap
+                                    held.x = current_tetromino.x;
+                                    held.y = current_tetromino.y;
+                                    held_tetromino = Some(current_tetromino);
+                                    current_tetromino = held;
+                                } else {
+                                    // First time holding
+                                    held_tetromino = Some(current_tetromino);
+                                    current_tetromino = next_tetromino;
+                                    next_tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
+                                }
+                                has_swapped = true;
                             }
                         }
                         Keycode::R => {
@@ -481,6 +509,7 @@ pub fn main() -> Result<(), String> {
                 let still_landed = check_collision(&current_tetromino.blocks, &playfield, current_tetromino.x, current_tetromino.y + 1);
                 if still_landed && timer_started_at.elapsed().unwrap_or_default() >= LOCK_DELAY_DURATION {
                     lock_piece(&current_tetromino, &mut playfield, current_level, &mut score, &mut total_lines_cleared, &mut current_level);
+                    has_swapped = false;
                     
                     current_tetromino = next_tetromino;
                     current_tetromino.x = PLAYFIELD_WIDTH as i32 / 2 -1; // Standard spawn X
@@ -549,6 +578,20 @@ pub fn main() -> Result<(), String> {
         }
         
         if !game_over {
+            // --- Ghost Piece Rendering ---
+            let ghost_y = calculate_ghost_piece_y(&current_tetromino, &playfield);
+            let ghost_color = Color::RGBA(128, 128, 128, 100); // Semi-transparent gray
+            for &(block_dx, block_dy) in &current_tetromino.blocks {
+                let px = current_tetromino.x + block_dx;
+                let py = ghost_y + block_dy;
+                if px >= 0 && px < PLAYFIELD_WIDTH as i32 && py >= 0 && py < PLAYFIELD_HEIGHT as i32 {
+                    // A simpler drawing for the ghost piece, e.g., just the outline or a faded block
+                    canvas.set_draw_color(ghost_color);
+                    canvas.fill_rect(Rect::new(px * BLOCK_SIZE as i32, py * BLOCK_SIZE as i32, BLOCK_SIZE, BLOCK_SIZE))?;
+                }
+            }
+
+
             let main_color = get_tetromino_color(current_tetromino.tetromino_type);
             for &(block_dx, block_dy) in &current_tetromino.blocks {
                 let px = current_tetromino.x + block_dx;
@@ -580,6 +623,50 @@ pub fn main() -> Result<(), String> {
         render_text(&mut canvas, &format!("Level: {}", current_level), text_x, current_text_y, PALE_GOLD_COLOR)?;
         
         current_text_y += ui_element_spacing; // Add space before "Next" piece display
+
+        // --- Hold Piece Display ---
+        render_text(&mut canvas, "Hold:", text_x, current_text_y, PALE_GOLD_COLOR)?;
+        current_text_y += line_spacing;
+        let hold_piece_box_x = text_x;
+        let hold_piece_box_y = current_text_y;
+        let hold_piece_box_width = 4 * BLOCK_SIZE;
+        let hold_piece_box_height = 4 * BLOCK_SIZE;
+
+        canvas.set_draw_color(Color::RGB(30, 30, 40));
+        canvas.fill_rect(Rect::new(hold_piece_box_x, hold_piece_box_y, hold_piece_box_width, hold_piece_box_height))?;
+
+        if let Some(ref held) = held_tetromino {
+            let mut min_bx = 2; let mut max_bx = -2;
+            let mut min_by = 2; let mut max_by = -2;
+            for &(bx, by) in &held.blocks {
+                if bx < min_bx { min_bx = bx; } if bx > max_bx { max_bx = bx; }
+                if by < min_by { min_by = by; } if by > max_by { max_by = by; }
+            }
+            let piece_width_blocks = max_bx - min_bx + 1;
+            let piece_height_blocks = max_by - min_by + 1;
+
+            let offset_x = ( (4 - piece_width_blocks) as f32 / 2.0 - min_bx as f32 ) * BLOCK_SIZE as f32;
+            let offset_y = ( (4 - piece_height_blocks) as f32 / 2.0 - min_by as f32) * BLOCK_SIZE as f32;
+
+            let main_color = get_tetromino_color(held.tetromino_type);
+            for &(block_dx, block_dy) in &held.blocks {
+                let render_x = hold_piece_box_x + (block_dx * BLOCK_SIZE as i32) + offset_x as i32;
+                let render_y = hold_piece_box_y + (block_dy * BLOCK_SIZE as i32) + offset_y as i32;
+
+                if render_x >= hold_piece_box_x && render_x < hold_piece_box_x + hold_piece_box_width as i32 &&
+                   render_y >= hold_piece_box_y && render_y < hold_piece_box_y + hold_piece_box_height as i32 {
+                    draw_block_with_border(
+                        &mut canvas,
+                        render_x,
+                        render_y,
+                        BLOCK_SIZE,
+                        main_color
+                    )?;
+                }
+            }
+        }
+        current_text_y += hold_piece_box_height as i32 + ui_element_spacing;
+
 
         // "Next" Piece Display
         render_text(&mut canvas, "Next:", text_x, current_text_y, PALE_GOLD_COLOR)?;
