@@ -11,7 +11,7 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 use std::time::{Duration, SystemTime};
 use rand::Rng;
-use sdl2::ttf::Font; // Added for TTF
+mod font;
 
 // Game constants
 const PLAYFIELD_WIDTH: usize = 10;
@@ -275,21 +275,29 @@ fn attempt_rotation(
 }
 
 fn render_text(
-    canvas: &mut Canvas<Window>, font: &Font, text: &str, x: i32, y: i32, color: Color,
+    canvas: &mut Canvas<Window>, text: &str, x: i32, y: i32, color: Color,
 ) -> Result<(), String> {
-    if text.is_empty() { return Ok(()); } // Avoid error with empty string
-    let surface = font.render(text).blended(color).map_err(|e| e.to_string())?;
-    let texture_creator = canvas.texture_creator();
-    let texture = texture_creator.create_texture_from_surface(&surface).map_err(|e| e.to_string())?;
-    let sdl2::render::TextureQuery { width, height, .. } = texture.query();
-    canvas.copy(&texture, None, Some(Rect::new(x, y, width, height)))?;
+    let char_width = 5 * 2; // Each pixel is 2x2
+    canvas.set_draw_color(color);
+    for (i, c) in text.chars().enumerate() {
+        if let Some(char_data) = font::get_char_data(c) {
+            for (row_idx, &row_data) in char_data.iter().enumerate() {
+                for col_idx in 0..5 {
+                    if (row_data >> (4 - col_idx)) & 1 == 1 {
+                        let px = x + (i as i32 * char_width) + (col_idx * 2);
+                        let py = y + (row_idx as i32 * 2);
+                        canvas.fill_rect(Rect::new(px, py, 2, 2))?;
+                    }
+                }
+            }
+        }
+    }
     Ok(())
 }
 
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
-    let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
 
     let playfield_render_width = PLAYFIELD_WIDTH as u32 * BLOCK_SIZE;
     let window_width = playfield_render_width + SCORE_TEXT_AREA_WIDTH;
@@ -300,11 +308,6 @@ pub fn main() -> Result<(), String> {
         .position_centered().build().map_err(|e| e.to_string())?;
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-
-    let font_path = "src/fonts/Roboto-Regular.ttf";
-    let mut font = ttf_context.load_font(font_path, 24)?;
-    font.set_style(sdl2::ttf::FontStyle::BOLD);
-
 
     let mut playfield: Playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
     
@@ -551,16 +554,16 @@ pub fn main() -> Result<(), String> {
 
         const PALE_GOLD_COLOR: Color = Color::RGB(230, 210, 160);
 
-        render_text(&mut canvas, &font, &format!("Score: {}", score), text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, &format!("Score: {}", score), text_x, current_text_y, PALE_GOLD_COLOR)?;
         current_text_y += line_spacing;
-        render_text(&mut canvas, &font, &format!("Lines: {}", total_lines_cleared), text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, &format!("Lines: {}", total_lines_cleared), text_x, current_text_y, PALE_GOLD_COLOR)?;
         current_text_y += line_spacing;
-        render_text(&mut canvas, &font, &format!("Level: {}", current_level), text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, &format!("Level: {}", current_level), text_x, current_text_y, PALE_GOLD_COLOR)?;
         
         current_text_y += ui_element_spacing; // Add space before "Next" piece display
 
         // "Next" Piece Display
-        render_text(&mut canvas, &font, "Next:", text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, "Next:", text_x, current_text_y, PALE_GOLD_COLOR)?;
         current_text_y += line_spacing; // Space for the label itself
 
         let next_piece_box_x = text_x;
@@ -617,9 +620,9 @@ pub fn main() -> Result<(), String> {
             canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
             canvas.set_draw_color(Color::RGBA(10, 10, 20, 180)); // Game Over overlay
             canvas.fill_rect(overlay_rect)?;
-            render_text(&mut canvas, &font, "GAME OVER", game_over_x, game_over_y, Color::RED)?; // GAME OVER title remains Red
-            render_text(&mut canvas, &font, &format!("Final Score: {}", score), game_over_x, game_over_y + line_spacing, PALE_GOLD_COLOR)?;
-            render_text(&mut canvas, &font, "Press 'R' to Restart", game_over_x, game_over_y + 2 * line_spacing, PALE_GOLD_COLOR)?;
+            render_text(&mut canvas, "GAME OVER", game_over_x, game_over_y, Color::RED)?; // GAME OVER title remains Red
+            render_text(&mut canvas, &format!("Final Score: {}", score), game_over_x, game_over_y + line_spacing, PALE_GOLD_COLOR)?;
+            render_text(&mut canvas, "Press 'R' to Restart", game_over_x, game_over_y + 2 * line_spacing, PALE_GOLD_COLOR)?;
         }
 
         canvas.present();
