@@ -124,7 +124,7 @@ fn test_render_multi_character_text_with_mock_canvas() {
                 for col_idx in 0..5 {
                     if (row_data >> (4 - col_idx)) & 1 == 1 {
                         let px = (i as i32 * char_width) + (col_idx as i32 * 2);
-                        let py = (row_idx as i32 * 2);
+                        let py = row_idx as i32 * 2;
                         expected_rects.push(Rect::new(px, py, 2, 2));
                     }
                 }
@@ -140,7 +140,7 @@ fn test_render_multi_character_text_with_mock_canvas() {
 
 #[test]
 fn test_rotation_and_wall_kick() {
-    let mut playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
+    let playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
     let mut tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
     tetromino.tetromino_type = TetrominoType::I;
     tetromino.x = 0;
