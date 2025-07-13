@@ -69,6 +69,44 @@ fn test_line_clearing_and_scoring() {
     }
 }
 
+
+struct MockCanvas {
+    draw_color: Color,
+    rects: Vec<Rect>,
+}
+
+impl MockCanvas {
+    fn new() -> Self {
+        MockCanvas {
+            draw_color: Color::RGB(0, 0, 0),
+            rects: Vec::new(),
+        }
+    }
+}
+
+impl CanvasTrait for MockCanvas {
+    fn set_draw_color(&mut self, color: Color) {
+        self.draw_color = color;
+    }
+
+    fn fill_rect(&mut self, rect: Rect) -> Result<(), String> {
+        self.rects.push(rect);
+        Ok(())
+    }
+}
+
+#[test]
+fn test_render_text_with_mock_canvas() {
+    let mut mock_canvas = MockCanvas::new();
+    let text_to_render = "A";
+    let text_color = Color::RGB(255, 255, 255);
+
+    let result = render_text(&mut mock_canvas, text_to_render, 0, 0, text_color);
+    assert!(result.is_ok());
+
+    assert_eq!(mock_canvas.rects.len(), 17);
+}
+
 #[test]
 fn test_rotation_and_wall_kick() {
     let mut playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
