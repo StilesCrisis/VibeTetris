@@ -1,0 +1,90 @@
+use super::*;
+
+#[test]
+fn test_spawn_tetromino() {
+    let tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
+
+    // Verify that the tetromino is spawned within the playfield boundaries
+    assert!(tetromino.x >= 0 && tetromino.x < PLAYFIELD_WIDTH as i32);
+    assert!(tetromino.y >= 0 && tetromino.y < PLAYFIELD_HEIGHT as i32);
+
+    // Verify that the tetromino has a valid type
+    assert!(tetromino.tetromino_type as u8 >= 1 && tetromino.tetromino_type as u8 <= 7);
+
+    // Verify that the tetromino has the correct initial rotation
+    assert_eq!(tetromino.rotation_index, 0);
+}
+
+#[test]
+fn test_collision_detection() {
+    let mut playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
+    let tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
+
+    // Test collision with the left boundary
+    assert!(check_collision(&tetromino.blocks, &playfield, -1, tetromino.y));
+
+    // Test collision with the right boundary
+    assert!(check_collision(&tetromino.blocks, &playfield, PLAYFIELD_WIDTH as i32, tetromino.y));
+
+    // Test collision with the bottom boundary
+    assert!(check_collision(&tetromino.blocks, &playfield, tetromino.x, PLAYFIELD_HEIGHT as i32));
+
+    // Test collision with another tetromino
+    playfield[5][5] = 1;
+    let mut colliding_tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
+    colliding_tetromino.x = 5;
+    colliding_tetromino.y = 5;
+    assert!(check_collision(&colliding_tetromino.blocks, &playfield, colliding_tetromino.x, colliding_tetromino.y));
+}
+
+#[test]
+fn test_line_clearing_and_scoring() {
+    let mut playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
+    let mut score = 0;
+    let mut total_lines_cleared = 0;
+    let mut game_level = 1;
+
+    // Fill one line completely, except for one block
+    for i in 0..PLAYFIELD_WIDTH - 1 {
+        playfield[PLAYFIELD_HEIGHT - 1][i] = 1;
+    }
+
+    let tetromino = Tetromino {
+        tetromino_type: TetrominoType::I,
+        rotation_index: 0,
+        blocks: vec![(0, 0)],
+        x: (PLAYFIELD_WIDTH - 1) as i32,
+        y: (PLAYFIELD_HEIGHT - 1) as i32,
+    };
+
+    lock_piece(&tetromino, &mut playfield, 1, &mut score, &mut total_lines_cleared, &mut game_level);
+
+    // After locking the piece, one line should be cleared
+    assert_eq!(total_lines_cleared, 1);
+    assert_eq!(score, 100);
+
+    // Verify that the line has been cleared
+    for i in 0..PLAYFIELD_WIDTH {
+        assert_eq!(playfield[PLAYFIELD_HEIGHT - 1][i], 0);
+    }
+}
+
+#[test]
+fn test_rotation_and_wall_kick() {
+    let mut playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
+    let mut tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
+    tetromino.tetromino_type = TetrominoType::I;
+    tetromino.x = 0;
+    tetromino.y = 0;
+
+    // Test simple rotation
+    let rotation_result = attempt_rotation(&tetromino, &playfield, true);
+    assert!(rotation_result.is_some());
+    let (_new_blocks, _new_x, _new_y, new_rotation_index) = rotation_result.unwrap();
+    assert_eq!(new_rotation_index, 1);
+
+    // Test wall kick
+    tetromino.x = -1;
+    let wall_kick_result = attempt_rotation(&tetromino, &playfield, true);
+    assert!(wall_kick_result.is_some());
+}

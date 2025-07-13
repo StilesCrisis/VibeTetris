@@ -13,6 +13,9 @@ use std::time::{Duration, SystemTime};
 use rand::Rng;
 mod font;
 
+#[cfg(test)]
+mod tests;
+
 // Game constants
 const PLAYFIELD_WIDTH: usize = 10;
 const PLAYFIELD_HEIGHT: usize = 20; // Visible area
