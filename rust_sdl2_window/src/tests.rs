@@ -108,6 +108,37 @@ fn test_render_text_with_mock_canvas() {
 }
 
 #[test]
+fn test_render_multi_character_text_with_mock_canvas() {
+    let mut mock_canvas = MockCanvas::new();
+    let text_to_render = "MWmwpyqg_^";
+    let text_color = Color::RGB(255, 255, 255);
+
+    let result = render_text(&mut mock_canvas, text_to_render, 0, 0, text_color);
+    assert!(result.is_ok());
+
+    let mut expected_rects = Vec::new();
+    let char_width = 6 * 2;
+    for (i, c) in text_to_render.chars().enumerate() {
+        if let Some(char_data) = font::get_char_data(c) {
+            for (row_idx, &row_data) in char_data.iter().enumerate() {
+                for col_idx in 0..5 {
+                    if (row_data >> (4 - col_idx)) & 1 == 1 {
+                        let px = (i as i32 * char_width) + (col_idx as i32 * 2);
+                        let py = (row_idx as i32 * 2);
+                        expected_rects.push(Rect::new(px, py, 2, 2));
+                    }
+                }
+            }
+        }
+    }
+
+    assert_eq!(mock_canvas.rects.len(), expected_rects.len());
+    for rect in &expected_rects {
+        assert!(mock_canvas.rects.contains(rect));
+    }
+}
+
+#[test]
 fn test_rotation_and_wall_kick() {
     let mut playfield = vec![vec![0; PLAYFIELD_WIDTH]; PLAYFIELD_HEIGHT];
     let mut tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
