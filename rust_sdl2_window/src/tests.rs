@@ -1,11 +1,23 @@
 use super::*;
 
 struct MockCanvas {
+    draw_color: Color,
     rects: Vec<Rect>,
 }
 
+impl MockCanvas {
+    fn new() -> Self {
+        MockCanvas {
+            draw_color: Color::RGB(0, 0, 0),
+            rects: Vec::new(),
+        }
+    }
+}
+
 impl CanvasTrait for MockCanvas {
-    fn set_draw_color(&mut self, _color: Color) {}
+    fn set_draw_color(&mut self, color: Color) {
+        self.draw_color = color;
+    }
 
     fn fill_rect(&mut self, rect: Rect) -> Result<(), String> {
         self.rects.push(rect);
@@ -82,42 +94,28 @@ fn test_line_clearing_and_scoring() {
     }
 }
 
-
-struct MockCanvas {
-    draw_color: Color,
-    rects: Vec<Rect>,
-}
-
-impl MockCanvas {
-    fn new() -> Self {
-        MockCanvas {
-            draw_color: Color::RGB(0, 0, 0),
-            rects: Vec::new(),
-        }
-    }
-}
-
-impl CanvasTrait for MockCanvas {
-    fn set_draw_color(&mut self, color: Color) {
-        self.draw_color = color;
-    }
-
-    fn fill_rect(&mut self, rect: Rect) -> Result<(), String> {
-        self.rects.push(rect);
-        Ok(())
-    }
-}
-
 #[test]
 fn test_render_text_with_mock_canvas() {
     let mut mock_canvas = MockCanvas::new();
     let text_to_render = "A";
     let text_color = Color::RGB(255, 255, 255);
 
-    let result = render_text(&mut mock_canvas, text_to_render, 0, 0, text_color);
-    assert!(result.is_ok());
+    render_text(&mut mock_canvas, text_to_render, 0, 0, text_color, 1).unwrap();
 
-    assert_eq!(mock_canvas.rects.len(), 17);
+    let expected_rects = vec![
+        Rect::new(1, 0, 1, 1), Rect::new(2, 0, 1, 1), Rect::new(3, 0, 1, 1),
+        Rect::new(0, 1, 1, 1), Rect::new(4, 1, 1, 1),
+        Rect::new(0, 2, 1, 1), Rect::new(4, 2, 1, 1),
+        Rect::new(0, 3, 1, 1), Rect::new(1, 3, 1, 1), Rect::new(2, 3, 1, 1), Rect::new(3, 3, 1, 1), Rect::new(4, 3, 1, 1),
+        Rect::new(0, 4, 1, 1), Rect::new(4, 4, 1, 1),
+        Rect::new(0, 5, 1, 1), Rect::new(4, 5, 1, 1),
+        Rect::new(0, 6, 1, 1), Rect::new(4, 6, 1, 1),
+    ];
+
+    assert_eq!(mock_canvas.rects.len(), expected_rects.len());
+    for rect in &expected_rects {
+        assert!(mock_canvas.rects.contains(rect));
+    }
 }
 
 #[test]
@@ -126,7 +124,7 @@ fn test_render_multi_character_text_with_mock_canvas() {
     let text_to_render = "MWmwpyqg_^";
     let text_color = Color::RGB(255, 255, 255);
 
-    let result = render_text(&mut mock_canvas, text_to_render, 0, 0, text_color);
+    let result = render_text(&mut mock_canvas, text_to_render, 0, 0, text_color, 2);
     assert!(result.is_ok());
 
     let mut expected_rects = Vec::new();
@@ -244,26 +242,5 @@ mod rotation_tests {
         assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (0,1), (1,-1)]);
         assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (1,0), (1,1)]);
         assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (0,1), (-1,1)]);
-    }
-}
-
-#[test]
-fn test_render_text() {
-    let mut mock_canvas = MockCanvas { rects: vec![] };
-    render_text(&mut mock_canvas, "A", 0, 0, Color::RGB(255, 255, 255), 1).unwrap();
-
-    let expected_rects = vec![
-        Rect::new(1, 0, 1, 1), Rect::new(2, 0, 1, 1), Rect::new(3, 0, 1, 1),
-        Rect::new(0, 1, 1, 1), Rect::new(4, 1, 1, 1),
-        Rect::new(0, 2, 1, 1), Rect::new(4, 2, 1, 1),
-        Rect::new(0, 3, 1, 1), Rect::new(1, 3, 1, 1), Rect::new(2, 3, 1, 1), Rect::new(3, 3, 1, 1), Rect::new(4, 3, 1, 1),
-        Rect::new(0, 4, 1, 1), Rect::new(4, 4, 1, 1),
-        Rect::new(0, 5, 1, 1), Rect::new(4, 5, 1, 1),
-        Rect::new(0, 6, 1, 1), Rect::new(4, 6, 1, 1),
-    ];
-
-    assert_eq!(mock_canvas.rects.len(), expected_rects.len());
-    for rect in &expected_rects {
-        assert!(mock_canvas.rects.contains(rect));
     }
 }
