@@ -302,18 +302,20 @@ fn calculate_ghost_piece_y(tetromino: &Tetromino, playfield: &Playfield) -> i32 
 }
 
 fn render_text<T: CanvasTrait>(
-    canvas: &mut T, text: &str, x: i32, y: i32, color: Color,
+    canvas: &mut T, text: &str, x: i32, y: i32, color: Color, scale: u32
 ) -> Result<(), String> {
-    const CHAR_WIDTH: i32 = 6 * 2;
+    const CHAR_WIDTH: u32 = 5;
+    const CHAR_SPACING: u32 = 1;
+
     canvas.set_draw_color(color);
     for (i, c) in text.chars().enumerate() {
         if let Some(char_data) = font::get_char_data(c) {
             for (row_idx, &row_data) in char_data.iter().enumerate() {
-                for col_idx in 0..5 {
+                for col_idx in 0..CHAR_WIDTH {
                     if (row_data >> (4 - col_idx)) & 1 == 1 {
-                        let px = x + (i as i32 * CHAR_WIDTH) + (col_idx as i32 * 2);
-                        let py = y + (row_idx as i32 * 2);
-                        canvas.fill_rect(Rect::new(px, py, 2, 2))?;
+                        let px = x + (i as u32 * (CHAR_WIDTH + CHAR_SPACING) * scale) as i32 + (col_idx * scale) as i32;
+                        let py = y + (row_idx as u32 * scale) as i32;
+                        canvas.fill_rect(Rect::new(px, py, scale, scale))?;
                     }
                 }
             }
@@ -616,16 +618,16 @@ pub fn main() -> Result<(), String> {
 
         const PALE_GOLD_COLOR: Color = Color::RGB(230, 210, 160);
 
-        render_text(&mut canvas, &format!("Score: {}", score), text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, &format!("Score: {}", score), text_x, current_text_y, PALE_GOLD_COLOR, 2)?;
         current_text_y += line_spacing;
-        render_text(&mut canvas, &format!("Lines: {}", total_lines_cleared), text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, &format!("Lines: {}", total_lines_cleared), text_x, current_text_y, PALE_GOLD_COLOR, 2)?;
         current_text_y += line_spacing;
-        render_text(&mut canvas, &format!("Level: {}", current_level), text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, &format!("Level: {}", current_level), text_x, current_text_y, PALE_GOLD_COLOR, 2)?;
         
         current_text_y += ui_element_spacing; // Add space before "Next" piece display
 
         // --- Hold Piece Display ---
-        render_text(&mut canvas, "Hold:", text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, "Hold:", text_x, current_text_y, PALE_GOLD_COLOR, 2)?;
         current_text_y += line_spacing;
         let hold_piece_box_x = text_x;
         let hold_piece_box_y = current_text_y;
@@ -669,7 +671,7 @@ pub fn main() -> Result<(), String> {
 
 
         // "Next" Piece Display
-        render_text(&mut canvas, "Next:", text_x, current_text_y, PALE_GOLD_COLOR)?;
+        render_text(&mut canvas, "Next:", text_x, current_text_y, PALE_GOLD_COLOR, 2)?;
         current_text_y += line_spacing; // Space for the label itself
 
         let next_piece_box_x = text_x;
@@ -726,9 +728,9 @@ pub fn main() -> Result<(), String> {
             canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
             canvas.set_draw_color(Color::RGBA(10, 10, 20, 180)); // Game Over overlay
             canvas.fill_rect(overlay_rect)?;
-            render_text(&mut canvas, "GAME OVER", game_over_x, game_over_y, Color::RED)?; // GAME OVER title remains Red
-            render_text(&mut canvas, &format!("Final Score: {}", score), game_over_x, game_over_y + line_spacing, PALE_GOLD_COLOR)?;
-            render_text(&mut canvas, "Press 'R' to Restart", game_over_x, game_over_y + 2 * line_spacing, PALE_GOLD_COLOR)?;
+            render_text(&mut canvas, "GAME OVER", game_over_x, game_over_y, Color::RED, 3)?; // GAME OVER title remains Red
+            render_text(&mut canvas, &format!("Final Score: {}", score), game_over_x, game_over_y + line_spacing, PALE_GOLD_COLOR, 2)?;
+            render_text(&mut canvas, "Press 'R' to Restart", game_over_x, game_over_y + 2 * line_spacing, PALE_GOLD_COLOR, 2)?;
         }
 
         canvas.present();
