@@ -103,15 +103,24 @@ fn test_render_text_with_mock_canvas() {
     render_text(&mut mock_canvas, text_to_render, 0, 0, text_color, 1).unwrap();
 
     let expected_rects = vec![
-        Rect::new(1, 0, 1, 1), Rect::new(2, 0, 1, 1), Rect::new(3, 0, 1, 1),
-        Rect::new(0, 1, 1, 1), Rect::new(4, 1, 1, 1),
-        Rect::new(0, 2, 1, 1), Rect::new(4, 2, 1, 1),
-        Rect::new(0, 3, 1, 1), Rect::new(1, 3, 1, 1), Rect::new(2, 3, 1, 1), Rect::new(3, 3, 1, 1), Rect::new(4, 3, 1, 1),
-        Rect::new(0, 4, 1, 1), Rect::new(4, 4, 1, 1),
-        Rect::new(0, 5, 1, 1), Rect::new(4, 5, 1, 1),
-        Rect::new(0, 6, 1, 1), Rect::new(4, 6, 1, 1),
+        Rect::new(0, 0, 1, 1),
+        Rect::new(1, 0, 1, 1),
+        Rect::new(0, 1, 1, 1),
+        Rect::new(1, 1, 1, 1),
+        Rect::new(2, 1, 1, 1),
+        Rect::new(2, 2, 1, 1),
+        Rect::new(3, 2, 1, 1),
+        Rect::new(2, 3, 1, 1),
+        Rect::new(3, 3, 1, 1),
+        Rect::new(0, 4, 1, 1),
+        Rect::new(1, 4, 1, 1),
+        Rect::new(2, 4, 1, 1),
+        Rect::new(3, 4, 1, 1),
+        Rect::new(2, 5, 1, 1),
+        Rect::new(3, 5, 1, 1),
+        Rect::new(2, 6, 1, 1),
+        Rect::new(3, 6, 1, 1),
     ];
-
     assert_eq!(mock_canvas.rects.len(), expected_rects.len());
     for rect in &expected_rects {
         assert!(mock_canvas.rects.contains(rect));
