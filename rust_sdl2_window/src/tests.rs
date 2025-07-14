@@ -1,5 +1,18 @@
 use super::*;
 
+struct MockCanvas {
+    rects: Vec<Rect>,
+}
+
+impl CanvasTrait for MockCanvas {
+    fn set_draw_color(&mut self, _color: Color) {}
+
+    fn fill_rect(&mut self, rect: Rect) -> Result<(), String> {
+        self.rects.push(rect);
+        Ok(())
+    }
+}
+
 #[test]
 fn test_spawn_tetromino() {
     let tetromino = spawn_tetromino(PLAYFIELD_WIDTH);
@@ -231,5 +244,26 @@ mod rotation_tests {
         assert_shape(&get_rotated_shape(piece_type, 1), &vec![(0,0), (0,-1), (0,1), (1,-1)]);
         assert_shape(&get_rotated_shape(piece_type, 2), &vec![(0,0), (-1,0), (1,0), (1,1)]);
         assert_shape(&get_rotated_shape(piece_type, 3), &vec![(0,0), (0,-1), (0,1), (-1,1)]);
+    }
+}
+
+#[test]
+fn test_render_text() {
+    let mut mock_canvas = MockCanvas { rects: vec![] };
+    render_text(&mut mock_canvas, "A", 0, 0, Color::RGB(255, 255, 255), 1).unwrap();
+
+    let expected_rects = vec![
+        Rect::new(1, 0, 1, 1), Rect::new(2, 0, 1, 1), Rect::new(3, 0, 1, 1),
+        Rect::new(0, 1, 1, 1), Rect::new(4, 1, 1, 1),
+        Rect::new(0, 2, 1, 1), Rect::new(4, 2, 1, 1),
+        Rect::new(0, 3, 1, 1), Rect::new(1, 3, 1, 1), Rect::new(2, 3, 1, 1), Rect::new(3, 3, 1, 1), Rect::new(4, 3, 1, 1),
+        Rect::new(0, 4, 1, 1), Rect::new(4, 4, 1, 1),
+        Rect::new(0, 5, 1, 1), Rect::new(4, 5, 1, 1),
+        Rect::new(0, 6, 1, 1), Rect::new(4, 6, 1, 1),
+    ];
+
+    assert_eq!(mock_canvas.rects.len(), expected_rects.len());
+    for rect in &expected_rects {
+        assert!(mock_canvas.rects.contains(rect));
     }
 }
